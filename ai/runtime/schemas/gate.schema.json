@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harness.local/ai/runtime/schemas/gate.schema.json",
+  "title": "GateState",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["gateId", "status", "evidenceRefs"],
+  "properties": {
+    "gateId": {
+      "type": "string",
+      "enum": ["G1", "G2", "G3", "G4", "G5", "G6"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["todo", "in_progress", "passed", "blocked"]
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "note": {
+      "type": "string"
+    }
+  }
+}

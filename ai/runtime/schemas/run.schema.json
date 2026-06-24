@@ -1,0 +1,490 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harness.local/ai/runtime/schemas/run.schema.json",
+  "title": "RunState",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "runId",
+    "pipelineId",
+    "createdAt",
+    "updatedAt",
+    "revision",
+    "status",
+    "taskIds",
+    "readyQueue",
+    "blockedTasks",
+    "completedTasks",
+    "failedTasks",
+    "gateStateIds",
+    "gateStates",
+    "controlState",
+    "orchestrationState",
+    "lockState",
+    "projectionState",
+    "taskIndexState",
+    "executionState",
+    "artifacts",
+    "supersededArtifacts"
+  ],
+  "properties": {
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pipelineId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["planning", "running", "paused", "blocked", "completed", "failed"]
+    },
+    "taskIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "readyQueue": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "blockedTasks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "completedTasks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "failedTasks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "gateStateIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["G1", "G2", "G3", "G4", "G5", "G6"]
+      }
+    },
+    "gateStates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/gateState"
+      }
+    },
+    "summaryPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contextPacketRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "controlState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["paused", "updatedAt", "updatedBy"],
+      "properties": {
+        "paused": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "orchestrationState": {
+      "$ref": "#/$defs/orchestrationState"
+    },
+    "lockState": {
+      "$ref": "#/$defs/lockState"
+    },
+    "projectionState": {
+      "$ref": "#/$defs/projectionState"
+    },
+    "taskIndexState": {
+      "$ref": "#/$defs/taskIndexState"
+    },
+    "executionState": {
+      "$ref": "#/$defs/executionState"
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["light", "standard", "full"]
+    },
+    "reworkState": {
+      "$ref": "#/$defs/reworkState"
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "current_frontend_handoff",
+        "current_review_brief",
+        "current_qa_report",
+        "current_regression_report",
+        "current_review_report",
+        "current_delivery_report"
+      ],
+      "properties": {
+        "current_ux_interaction": {
+          "$ref": "#/$defs/runArtifactEntry"
+        },
+        "current_frontend_handoff": {
+          "$ref": "#/$defs/runArtifactEntry"
+        },
+        "current_review_brief": {
+          "$ref": "#/$defs/runArtifactEntry"
+        },
+        "current_qa_report": {
+          "$ref": "#/$defs/runArtifactEntry"
+        },
+        "current_regression_report": {
+          "$ref": "#/$defs/runArtifactEntry"
+        },
+        "current_review_report": {
+          "$ref": "#/$defs/runArtifactEntry"
+        },
+        "current_delivery_report": {
+          "$ref": "#/$defs/runArtifactEntry"
+        }
+      }
+    },
+    "supersededArtifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/supersededArtifactEntry"
+      }
+    }
+  },
+  "$defs": {
+    "gateState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gateId", "status", "evidenceRefs"],
+      "properties": {
+        "gateId": {
+          "type": "string",
+          "enum": ["G1", "G2", "G3", "G4", "G5", "G6"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["todo", "in_progress", "passed", "blocked"]
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "orchestrationState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "primaryOwner", "ownerRole", "coordinationStatus", "updatedAt", "updatedBy"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["single_writer_run"]
+        },
+        "primaryOwner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ownerRole": {
+          "type": "string",
+          "minLength": 1
+        },
+        "currentStageId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "coordinationStatus": {
+          "type": "string",
+          "enum": ["clear", "watch", "conflict"]
+        },
+        "note": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "lockState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "lockPath", "lastHeldBy", "lastAcquiredAt", "lastReleasedAt", "updatedAt", "updatedBy"],
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["lock_file_cas"]
+        },
+        "lockPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lastHeldBy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lastAcquiredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastReleasedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "projectionState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectionMode", "inputHash", "backlogHash", "gatesHash", "reportHash", "currentArtifactsHash", "updatedAt", "updatedBy"],
+      "properties": {
+        "projectionMode": {
+          "type": "string",
+          "enum": ["shared_and_per_run"]
+        },
+        "inputHash": {
+          "type": "string"
+        },
+        "backlogHash": {
+          "type": "string"
+        },
+        "gatesHash": {
+          "type": "string"
+        },
+        "reportHash": {
+          "type": "string"
+        },
+        "currentArtifactsHash": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "taskIndexState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["indexPath", "indexHash", "updatedAt", "updatedBy"],
+      "properties": {
+        "indexPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "indexHash": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "executionClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["taskId", "leaseId", "claimedBy", "claimedAt", "leaseUntil"],
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "leaseId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claimedBy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claimedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "leaseUntil": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "executionState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["coordinationMode", "workerLeaseMs", "activeClaims", "updatedAt", "updatedBy"],
+      "properties": {
+        "coordinationMode": {
+          "type": "string",
+          "enum": ["multiprocess_leased"]
+        },
+        "workerLeaseMs": {
+          "type": "number"
+        },
+        "activeClaims": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/executionClaim"
+          }
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "reworkState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rounds", "maxRounds", "tripped", "updatedAt", "updatedBy"],
+      "properties": {
+        "rounds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maxRounds": {
+          "type": "number",
+          "minimum": 1
+        },
+        "lastReason": {
+          "type": "string"
+        },
+        "tripped": {
+          "type": "boolean"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "runArtifactEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "updatedAt", "updatedBy"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["missing", "current"]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "note": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "supersededArtifactEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "updatedAt", "updatedBy"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "note": {
+          "type": "string"
+        },
+        "replacedBy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

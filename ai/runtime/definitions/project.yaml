@@ -1,0 +1,37 @@
+# ============================================================================
+# Harness project contract — describes the workspace under orchestration.
+#
+# EDIT THIS for your repository:
+#   - workspaceRoot: path to the project Harness drives, relative to repo root.
+#   - validation.checks: the REAL, deterministic commands the validation (QA)
+#     lane runs. Exit code 0 = pass, non-zero = fail. These are NOT summarized
+#     by an LLM — they run as actual processes (see runtime/validation-adapter).
+#
+# The placeholder commands below are no-ops so a fresh `ai:init` + `ai:plan`
+# works out of the box. Replace them with your project's real commands, e.g.
+#   command: pnpm lint
+#   command: pnpm typecheck
+# ============================================================================
+projectId: my-project
+displayName: My Project
+workspaceRoot: .
+context:
+  summaryRoot: ai/docs/summary
+  runContextRoot: ai/context/runs
+  defaultReadPolicy: ai/runtime/definitions/read-policies.yaml
+  # Optional: single source of truth for API / field contracts, if your
+  # project has one. Uncomment and point at your spec.
+  # contractSource: ai/docs/openapi/openapi.yaml
+validation:
+  defaultSuite:
+    - lint
+    - typecheck
+  checks:
+    - checkId: lint
+      description: Lint placeholder (TODO replace with your real lint command)
+      command: node --version
+      runFrom: .
+    - checkId: typecheck
+      description: Type-check placeholder (TODO replace with your real command)
+      command: node --version
+      runFrom: .

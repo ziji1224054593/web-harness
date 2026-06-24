@@ -1,0 +1,92 @@
+pipelines:
+  page-delivery:
+    description: Default minimal orchestration pipeline for delivering a unit of work (page, module, or change).
+    optionalSupportRoles:
+      - ux
+      - integration
+      - devops
+      - backend
+    stages:
+      - stageId: requirement-refinement
+        taskType: requirement
+        ownerRole: product
+        gateTarget: G1
+        dependsOnStages: []
+        requiredEvidenceKinds:
+          - analysis
+      - stageId: module-scan
+        taskType: scan
+        ownerRole: architecture
+        gateTarget: G2
+        dependsOnStages:
+          - requirement-refinement
+        requiredEvidenceKinds:
+          - analysis
+      - stageId: solution-alignment
+        taskType: solution
+        ownerRole: lead_orchestrator
+        gateTarget: G3
+        dependsOnStages:
+          - module-scan
+        humanConfirmationRequired: true
+        humanConfirmationNotes:
+          - confirm scope and out-of-scope
+          - confirm whether current RUN_ID should continue
+          - confirm whether extra support roles are needed
+          - confirm packet dispatch is approved
+        requiredEvidenceKinds:
+          - decision
+          - manual_override
+          - context_packet
+        outputArtifacts:
+          - ai/context/runs/<RUN_ID>/run-summary.md
+          - ai/context/runs/<RUN_ID>/role-packets/product.md
+          - ai/context/runs/<RUN_ID>/role-packets/architecture.md
+          - ai/context/runs/<RUN_ID>/role-packets/frontend.md
+          - ai/context/runs/<RUN_ID>/role-packets/qa.md
+          - ai/context/runs/<RUN_ID>/role-packets/review.md
+      - stageId: frontend-implementation
+        taskType: implementation
+        ownerRole: frontend
+        gateTarget: G4
+        dependsOnStages:
+          - solution-alignment
+        humanConfirmationRequired: true
+        humanConfirmationNotes:
+          - confirm frontend first working version matches approved scope
+          - confirm key states and interactions are acceptable
+          - confirm QA can start
+        requiredEvidenceKinds:
+          - implementation
+          - manual_override
+        preferredInputs:
+          - ai/context/runs/<RUN_ID>/run-summary.md
+          - ai/context/runs/<RUN_ID>/role-packets/frontend.md
+      - stageId: validation
+        taskType: validation
+        ownerRole: qa
+        gateTarget: G5
+        dependsOnStages:
+          - frontend-implementation
+        requiredEvidenceKinds:
+          - validation
+        preferredInputs:
+          - ai/context/runs/<RUN_ID>/run-summary.md
+          - ai/context/runs/<RUN_ID>/role-packets/qa.md
+      - stageId: delivery-review
+        taskType: review
+        ownerRole: review
+        gateTarget: G6
+        dependsOnStages:
+          - validation
+        humanConfirmationRequired: true
+        humanConfirmationNotes:
+          - review QA and Review conclusions with human owner
+          - confirm go / no-go decision
+          - confirm whether run should complete, remain blocked, or continue
+        requiredEvidenceKinds:
+          - review
+          - manual_override
+        preferredInputs:
+          - ai/context/runs/<RUN_ID>/run-summary.md
+          - ai/context/runs/<RUN_ID>/role-packets/review.md

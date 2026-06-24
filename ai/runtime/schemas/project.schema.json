@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harness.local/ai/runtime/schemas/project.schema.json",
+  "title": "ProjectContract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["projectId", "displayName", "workspaceRoot", "validation"],
+  "properties": {
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workspaceRoot": {
+      "type": "string",
+      "minLength": 1
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summaryRoot", "runContextRoot", "defaultReadPolicy"],
+      "properties": {
+        "summaryRoot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runContextRoot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "defaultReadPolicy": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defaultSuite", "checks"],
+      "properties": {
+        "defaultSuite": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "checks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/validationCheck"
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "$defs": {
+    "validationCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkId", "description", "command"],
+      "properties": {
+        "checkId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runFrom": {
+          "type": "string",
+          "minLength": 1
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

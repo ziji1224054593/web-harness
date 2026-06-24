@@ -1,0 +1,156 @@
+defaults:
+  policy: summary_first
+  readOrder:
+    - AGENTS.md
+    - ai/docs/summary/repo-summary.md
+    - ai/context/runs/<RUN_ID>/run-summary.md
+    - ai/context/runs/<RUN_ID>/role-packets/<ROLE>.md
+    - ai/context/runs/<RUN_ID>/current-artifacts.md
+  fallbackOrder:
+    - ai/docs/
+    - src/
+
+runtimeGovernance:
+  collaborationModel: isolated_role_context_shared_run_state
+  runStateSource: ai/runtime/runs/<RUN_ID>.json
+  currentArtifactsIndex: ai/context/runs/<RUN_ID>/current-artifacts.md
+  runOwnershipMode: single_writer
+  rules:
+    - roles_consume_role_packet_and_current_artifacts_by_default
+    - execution_roles_do_not_infer_current_inputs_by_scanning_directories
+    - each_run_id_must_have_exactly_one_primary_orchestrator
+    - non_owner_sessions_are_advisory_or_draft_only
+
+roles:
+  lead_orchestrator:
+    policy: orchestrator_summary_first
+    mustRead:
+      - ai/docs/summary/repo-summary.md
+      - ai/frontend-ai-harness-best-practice-v1.md
+      - ai/workflows/context-dispatch-workflow.md
+      - ai/runtime/runs/<RUN_ID>.json
+      - ai/context/runs/<RUN_ID>/current-artifacts.md
+    optionalRead:
+      - ai/docs/
+      - src/
+      - ai/ai-prompts/
+    mustWrite:
+      - ai/context/runs/<RUN_ID>/run-summary.md
+      - ai/context/runs/<RUN_ID>/role-packets/product.md
+      - ai/context/runs/<RUN_ID>/role-packets/architecture.md
+      - ai/context/runs/<RUN_ID>/role-packets/frontend.md
+      - ai/context/runs/<RUN_ID>/role-packets/qa.md
+      - ai/context/runs/<RUN_ID>/role-packets/review.md
+    optionalWrite:
+      - ai/context/runs/<RUN_ID>/role-packets/optional/ux.md
+      - ai/context/runs/<RUN_ID>/role-packets/optional/integration.md
+      - ai/context/runs/<RUN_ID>/role-packets/optional/backend.md
+      - ai/context/runs/<RUN_ID>/role-packets/optional/devops.md
+
+  product:
+    policy: shared_context_first
+    mustRead:
+      - ai/context/runs/<RUN_ID>/run-summary.md
+      - ai/context/runs/<RUN_ID>/role-packets/product.md
+    optionalRead:
+      - ai/docs/prd/
+      - ai/docs/ux/
+
+  architecture:
+    policy: shared_context_first
+    mustRead:
+      - ai/context/runs/<RUN_ID>/run-summary.md
+      - ai/context/runs/<RUN_ID>/role-packets/architecture.md
+      - ai/docs/summary/architecture-summary.md
+    optionalRead:
+      - ai/docs/architecture/
+      - ai/docs/api/openapi/api-spec.yaml
+      - src/router/
+      - src/pages/
+      - src/api/
+      - src/store/
+
+  ux:
+    policy: shared_context_first
+    mustRead:
+      - ai/context/runs/<RUN_ID>/run-summary.md
+    optionalRead:
+      - ai/context/runs/<RUN_ID>/role-packets/optional/ux.md
+      - ai/docs/summary/ux-summary.md
+      - ai/docs/ux/
+
+  frontend:
+    policy: role_packet_first
+    mustRead:
+      - ai/context/runs/<RUN_ID>/run-summary.md
+      - ai/context/runs/<RUN_ID>/role-packets/frontend.md
+      - ai/context/runs/<RUN_ID>/current-artifacts.md
+      - ai/docs/summary/repo-summary.md
+    optionalRead:
+      - ai/docs/api/openapi/api-spec.yaml
+      - ai/docs/prd/
+      - ai/docs/ux/
+      - src/router/
+      - src/pages/
+      - src/api/
+      - src/store/
+
+  qa:
+    policy: role_packet_first
+    mustRead:
+      - ai/context/runs/<RUN_ID>/run-summary.md
+      - ai/context/runs/<RUN_ID>/role-packets/qa.md
+      - ai/context/runs/<RUN_ID>/current-artifacts.md
+    optionalRead:
+      - ai/reports/frontend/
+      - ai/reports/integration/
+      - ai/docs/prd/
+      - ai/docs/ux/
+      - src/pages/
+      - src/api/
+      - src/router/
+
+  review:
+    policy: role_packet_first
+    mustRead:
+      - ai/context/runs/<RUN_ID>/run-summary.md
+      - ai/context/runs/<RUN_ID>/role-packets/review.md
+      - ai/context/runs/<RUN_ID>/current-artifacts.md
+    optionalRead:
+      - ai/reports/frontend/
+      - ai/reports/qa/
+      - ai/reports/integration/
+      - ai/checklists/
+      - src/
+
+  integration:
+    policy: optional_support_packet
+    mustRead:
+      - ai/context/runs/<RUN_ID>/run-summary.md
+    optionalRead:
+      - ai/context/runs/<RUN_ID>/role-packets/optional/integration.md
+      - ai/docs/api/openapi/api-spec.yaml
+      - src/api/
+      - src/pages/
+
+  backend:
+    policy: optional_support_packet
+    mustRead:
+      - ai/context/runs/<RUN_ID>/run-summary.md
+    optionalRead:
+      - ai/context/runs/<RUN_ID>/role-packets/optional/backend.md
+      - ai/docs/api/openapi/api-spec.yaml
+      - ai/docs/prd/
+      - ai/docs/ux/
+      - src/api/
+      - src/pages/
+
+  devops:
+    policy: optional_support_packet
+    mustRead:
+      - ai/context/runs/<RUN_ID>/run-summary.md
+    optionalRead:
+      - ai/context/runs/<RUN_ID>/role-packets/optional/devops.md
+      - package.json
+      - ai/checklists/
+      - ai/frontend-ai-harness-best-practice-v1.md

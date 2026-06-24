@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harness · AI 编排运行时</title>
+<style>
+  :root{
+    --ground:#F2F3F9;--surface:#FFFFFF;--ink:#1A1B2E;--muted:#71748A;
+    --line:#E4E5F0;--line-2:#D3D5E4;
+    --brand:#5B5BD6;--done:#12805C;--alert:#DC4C4C;
+    --brand-s:#ECECFB;--done-s:#E1F2EA;--alert-s:#FBE9E9;--todo-s:#EBECF3;
+    --shadow:0 1px 2px rgba(26,27,46,.04),0 10px 30px -18px rgba(26,27,46,.22);
+    --mono:ui-monospace,"SFMono-Regular","Cascadia Code",Consolas,Menlo,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .mono{font-family:var(--mono)}
+  [hidden]{display:none!important}
+  a{color:inherit}
+  img,svg{max-width:100%}
+
+  .wrap{width:100%;max-width:1140px;margin:0 auto;padding:0 clamp(18px,5vw,64px)}
+  .sec{padding:clamp(46px,7vw,90px) 0}
+  .sec + .sec{border-top:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--brand);margin:0 0 14px;display:inline-flex;align-items:center;gap:10px;font-weight:600}
+  .eyebrow::before{content:"";width:24px;height:2px;background:var(--brand);border-radius:2px}
+  .sec-h{font-size:clamp(23px,3.6vw,34px);font-weight:800;letter-spacing:-.025em;margin:0 0 12px}
+  .sec-sub{font-size:clamp(15px,1.8vw,17px);color:#52566a;max-width:60ch;margin:0 0 36px}
+
+  /* ── 顶栏 ── */
+  .nav{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:14px;
+    background:rgba(255,255,255,.86);backdrop-filter:saturate(160%) blur(12px);
+    border-bottom:1px solid var(--line);padding:11px clamp(16px,5vw,64px)}
+  .nav .brand{display:flex;align-items:center;gap:10px;flex:none;text-decoration:none}
+  .nav .logo{width:30px;height:30px;border-radius:9px;background:var(--brand);color:#fff;display:grid;place-items:center;font-family:var(--mono);font-size:15px;font-weight:800}
+  .nav .bname{font-weight:800;font-size:16px;letter-spacing:-.01em;line-height:1}
+  .nav .bsub{font-family:var(--mono);font-weight:600;font-size:9px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+  .nav .links{margin-left:auto;display:flex;gap:4px;align-items:center}
+  .nav .links a{font-size:13.5px;color:var(--muted);text-decoration:none;padding:8px 13px;border-radius:9px;font-weight:600;white-space:nowrap}
+  .nav .links a:hover{color:var(--ink);background:var(--ground)}
+  .nav .links a.cta{background:var(--brand);color:#fff}
+  @media(max-width:760px){.nav .links a.nav-link{display:none}.nav .bsub{display:none}}
+
+  /* ── Hero ── */
+  .hero{padding:clamp(40px,6vw,78px) 0 clamp(30px,4vw,46px)}
+  .hero h1{font-size:clamp(30px,6.4vw,56px);line-height:1.04;letter-spacing:-.03em;font-weight:850;margin:0 0 20px}
+  .hero h1 .alt{color:var(--brand)}
+  .hero .lede{font-size:clamp(16px,2.1vw,19px);color:#3d4152;max-width:62ch;margin:0}
+  .hero .lede b{color:var(--ink);font-weight:680}
+  .cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-size:14.5px;font-weight:680;text-decoration:none;border-radius:12px;padding:12px 22px;border:1px solid var(--line-2);color:var(--ink);background:var(--surface);box-shadow:var(--shadow);cursor:pointer;font-family:inherit;transition:transform .14s ease}
+  .btn:hover{transform:translateY(-2px)}
+  .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+  /* 弹性流水线条(自动换行,不溢出) */
+  .pipe{display:flex;flex-wrap:wrap;align-items:center;gap:9px 7px;margin:38px 0 16px}
+  .pnode{display:inline-flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line-2);border-radius:13px;padding:11px 15px;box-shadow:var(--shadow);font-weight:700;font-size:14.5px}
+  .pnode small{font-family:var(--mono);font-size:10px;color:var(--brand);background:var(--brand-s);border-radius:5px;padding:2px 6px;font-weight:600}
+  .pnode.qa{border-color:var(--alert)} .pnode.qa small{color:var(--alert);background:var(--alert-s)}
+  .par{color:var(--line-2);font-family:var(--mono);font-weight:700;font-size:15px}
+  .rework-note{display:inline-flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px;color:#7a3b3b;background:var(--alert-s);border:1px solid #F1CFCF;border-radius:12px;padding:11px 15px}
+  .rework-note b{color:var(--alert)} .rework-note code{font-family:var(--mono);font-size:12px;color:var(--alert);background:#fff;padding:1px 6px;border-radius:5px}
+
+  /* ── 工作原理 ── */
+  .stages{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:13px}
+  .stage{background:var(--surface);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow);padding:18px 17px;position:relative}
+  .stage .gate{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--brand);background:var(--brand-s);border-radius:6px;padding:2px 7px;position:absolute;top:15px;right:14px}
+  .stage h3{margin:0 0 4px;font-size:16px;font-weight:740}
+  .stage .role{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:10px}
+  .stage p{margin:0;font-size:13px;color:#52566a;line-height:1.5}
+  .stage.skip .gate{color:var(--alert);background:var(--alert-s)}
+  .stage .skiptag{display:inline-block;margin-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--alert);background:var(--alert-s);padding:2px 7px;border-radius:5px}
+
+  .loop-wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:stretch;margin-top:18px}
+  @media(max-width:760px){.loop-wrap{grid-template-columns:1fr}}
+  .loop-steps{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:6px 20px}
+  .lstep{display:flex;gap:14px;padding:15px 0;border-bottom:1px solid var(--line)}
+  .lstep:last-child{border-bottom:0}
+  .lstep .ix{font-family:var(--mono);font-size:12px;color:#fff;background:var(--brand);border-radius:8px;min-width:26px;height:24px;display:inline-flex;align-items:center;justify-content:center;flex:none;font-weight:700}
+  .lstep.bounce .ix{background:var(--alert)} .lstep.ok .ix{background:var(--done)}
+  .lstep h4{margin:0 0 3px;font-size:14.5px;font-weight:680}
+  .lstep h4 code{font-family:var(--mono);font-size:12px;background:var(--brand-s);padding:1px 6px;border-radius:5px;color:var(--brand)}
+  .lstep.bounce h4 code{background:var(--alert-s);color:var(--alert)}
+  .lstep p{margin:0;font-size:12.5px;color:var(--muted)}
+  .breaker{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:22px;display:flex;flex-direction:column;gap:15px}
+  .breaker .b-title{font-family:var(--mono);font-size:12px;color:var(--alert);letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+  .rounds{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .rounds .r{font-family:var(--mono);font-size:12px;padding:6px 11px;border-radius:8px;border:1px solid var(--line-2);color:var(--muted)}
+  .rounds .r.used{color:var(--alert);border-color:var(--alert);background:var(--alert-s)}
+  .rounds .arr{color:var(--line-2);font-family:var(--mono)}
+  .rounds .trip{font-family:var(--mono);font-size:12px;padding:6px 11px;border-radius:8px;background:var(--alert);color:#fff;font-weight:700}
+  .breaker p{margin:0;font-size:13px;color:#52566a}
+  .breaker code{font-family:var(--mono);font-size:12px;color:var(--alert)}
+
+  /* ── 特性网格 ── */
+  .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,258px),1fr));gap:14px}
+  .feat{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:21px 20px}
+  .feat .fi{width:40px;height:40px;border-radius:11px;background:var(--brand-s);display:grid;place-items:center;font-size:20px;margin-bottom:14px}
+  .feat h3{margin:0 0 8px;font-size:16px;font-weight:740}
+  .feat p{margin:0;font-size:13.5px;color:#52566a;line-height:1.55}
+  .feat code{font-family:var(--mono);font-size:12px;color:var(--brand);background:var(--brand-s);padding:1px 5px;border-radius:4px}
+  .feat b{color:var(--ink);font-weight:680}
+
+  /* ── 快速上手 ── */
+  .code{position:relative;background:#15162a;border:1px solid #25274a;border-radius:16px;padding:22px;overflow-x:auto;box-shadow:0 20px 50px -30px rgba(26,27,46,.6)}
+  .code pre{margin:0;font-family:var(--mono);font-size:13px;line-height:1.95;color:#E7E8F4;white-space:pre}
+  .code .cmt{color:#7e83a8}
+  .code .cmd{color:#AEB8FF}
+  .copy{position:absolute;top:13px;right:13px;font:inherit;font-size:12px;font-weight:650;color:#cfd2ee;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:6px 11px;cursor:pointer}
+  .copy:hover{background:rgba(255,255,255,.15)}
+  .copy.done{color:#7ee0b6;border-color:#2f6e54}
+  .qs-note{margin:16px 2px 0;font-size:13px;color:var(--muted)}
+  .qs-note code{font-family:var(--mono);color:var(--brand);background:var(--brand-s);padding:1px 5px;border-radius:4px}
+
+  /* ── 现场演示控制台 ── */
+  .demo-intro p{font-size:15px;color:#52566a;max-width:62ch;margin:0 0 26px}
+  .demo-intro p b{color:var(--ink)}
+  .demo-frame{border:1px solid var(--line-2);border-radius:18px;overflow:hidden;background:var(--surface);box-shadow:0 40px 90px -50px rgba(26,27,46,.45)}
+  .demo-bar{display:flex;align-items:center;gap:11px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface)}
+  .demo-bar .traffic{display:flex;gap:7px;flex:none}
+  .demo-bar .traffic i{width:11px;height:11px;border-radius:50%;display:block}
+  .demo-bar .traffic i:nth-child(1){background:#FF5F57} .demo-bar .traffic i:nth-child(2){background:#FEBC2E} .demo-bar .traffic i:nth-child(3){background:#28C840}
+  .demo-bar .back{display:none;align-items:center;gap:6px;font-size:12.5px;font-weight:650;color:var(--brand);background:var(--brand-s);border:0;border-radius:8px;padding:6px 11px;cursor:pointer;font-family:var(--sans);flex:none}
+  .demo-bar .back:hover{background:#dedefb}
+  .demo-bar .addr{flex:1;min-width:0;font-family:var(--mono);font-size:11.5px;color:var(--muted);background:var(--ground);border:1px solid var(--line);border-radius:8px;padding:6px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .demo-bar .addr b{color:var(--brand);font-weight:600}
+  .demo-bar .live{flex:none;display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.05em}
+  .demo-bar .live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--done);animation:beat 1.8s ease-out infinite}
+  @keyframes beat{0%{box-shadow:0 0 0 0 rgba(18,128,92,.45)}70%{box-shadow:0 0 0 7px rgba(18,128,92,0)}100%{box-shadow:0 0 0 0 rgba(18,128,92,0)}}
+  @media(max-width:560px){.demo-bar .live{display:none}}
+  .demo-stage{background:var(--ground);padding:clamp(15px,3vw,26px)}
+  .demo-view{animation:fade .28s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){.demo-view{animation:none}html{scroll-behavior:auto}}
+
+  /* 总览栅格 */
+  .ov .ohead{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+  .ov .o-eye{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--brand);font-weight:600}
+  .ov .ohead h3{font-size:clamp(20px,3vw,27px);font-weight:800;letter-spacing:-.02em;margin:6px 0 0}
+  .ov .ohint{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:4px}
+  .ov .ocount{font-size:14px;color:var(--muted)} .ov .ocount b{color:var(--brand);font-size:22px;font-weight:800}
+  .ov .status{font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px;background:var(--brand-s);color:var(--brand)}
+  .ov .status-running{background:var(--brand-s);color:var(--brand)} .ov .status-blocked{background:var(--alert-s);color:var(--alert)} .ov .status-completed{background:var(--done-s);color:var(--done)}
+  .ov .ogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));gap:15px}
+  .ov .ocard{display:flex;flex-direction:column;gap:13px;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:19px 20px;text-align:left;color:var(--ink);cursor:pointer;font-family:inherit;width:100%;transition:transform .14s ease,box-shadow .14s ease}
+  .ov .ocard:hover{transform:translateY(-3px);box-shadow:0 1px 2px rgba(26,27,46,.04),0 18px 40px -20px rgba(91,91,214,.45)}
+  .ov .ocard:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+  .ov .ocard.idle{opacity:.62}
+  .ov .oc-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .ov .oc-id{font-size:14.5px;font-weight:700;font-family:var(--mono)}
+  .ov .oc-segs{display:flex;gap:5px}
+  .ov .seg{flex:1;height:7px;border-radius:4px;background:var(--todo-s)}
+  .ov .seg.done{background:var(--done)} .ov .seg.active{background:var(--brand)} .ov .seg.blocked{background:var(--alert)}
+  .ov .oc-stage{font-size:13.5px;color:var(--muted)} .ov .oc-stage b{color:var(--ink);font-weight:700}
+  .ov .oc-meta{display:flex;flex-wrap:wrap;gap:7px 16px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+  .ov .oc-meta b{color:var(--ink);font-weight:650;font-family:var(--mono)}
+  .ov .oc-open{font-family:var(--mono);font-size:11px;color:var(--brand);font-weight:600}
+
+  /* 单 RUN 看板 */
+  .bv{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:clamp(16px,2.6vw,26px)}
+  .bv .mono{font-family:var(--mono)}
+  .bv .b-eye{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--brand)}
+  .bv .tdim{color:var(--muted)}
+  .bv .chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;font-weight:600;padding:3px 9px;border-radius:7px;background:var(--todo-s);color:var(--muted);white-space:nowrap}
+  .bv .chip.done{background:var(--done-s);color:var(--done)}
+  .bv .chip.active{background:var(--brand);color:#fff}
+  .bv .chip.blocked{background:var(--alert);color:#fff}
+  .bv .chip.wait{background:var(--todo-s);color:var(--muted)}
+  .bv .bhead{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:22px}
+  .bv .bh-l h3{font-size:clamp(22px,4vw,32px);font-weight:800;letter-spacing:-.025em;margin:6px 0 4px;font-family:var(--mono)}
+  .bv .pipe-name{font-size:12.5px;color:var(--muted);font-family:var(--mono)}
+  .bv .bh-r{display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+  .bv .status{font-size:13px;font-weight:700;padding:5px 14px;border-radius:999px;background:var(--brand-s);color:var(--brand)}
+  .bv .status-running{background:var(--brand-s);color:var(--brand)} .bv .status-blocked{background:var(--alert-s);color:var(--alert)} .bv .status-completed{background:var(--done-s);color:var(--done)}
+  .bv .metas{display:flex;gap:16px;flex-wrap:wrap}
+  .bv .meta{display:flex;flex-direction:column;gap:2px;align-items:flex-end;font-size:14px}
+  .bv .meta b{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .bv .meta i{font-style:normal;font-weight:650;color:var(--ink);font-family:var(--mono)}
+  .bv .railscroll{overflow-x:auto;margin-bottom:18px}
+  .bv .rail{display:flex;min-width:540px;background:var(--ground);border:1px solid var(--line);border-radius:18px;padding:24px 12px}
+  .bv .rnode{flex:1 0 88px;display:flex;flex-direction:column;align-items:center;gap:9px;position:relative;padding:0 4px}
+  .bv .rnode::before{content:"";position:absolute;top:19px;left:-50%;width:100%;height:2px;background:var(--line-2);z-index:0}
+  .bv .rnode:first-child::before{display:none}
+  .bv .rnode.lit::before{background:var(--done)}
+  .bv .rdot{position:relative;z-index:1;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:15px;background:var(--surface);border:2px solid var(--line-2);color:var(--muted)}
+  .bv .rnode.done .rdot{background:var(--done);border-color:var(--done);color:#fff}
+  .bv .rnode.active .rdot{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 0 0 5px var(--brand-s);animation:pulse 1.9s ease-in-out infinite}
+  .bv .rnode.blocked .rdot{background:var(--alert);border-color:var(--alert);color:#fff}
+  .bv .rsn{font-size:13px;font-weight:650;color:var(--ink);text-align:center}
+  .bv .rnode.todo .rsn{color:var(--muted)}
+  .bv .rgid{font-size:10px;color:var(--muted)}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 4px var(--brand-s)}50%{box-shadow:0 0 0 9px rgba(91,91,214,.10)}}
+  @media(prefers-reduced-motion:reduce){.bv .rnode.active .rdot{animation:none}}
+  .bv .cols{display:grid;grid-template-columns:1.7fr 1fr;gap:16px;margin-bottom:16px}
+  @media(max-width:820px){.bv .cols{grid-template-columns:1fr}}
+  .bv .card{background:var(--ground);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+  .bv .card-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .bv .card-h h4{font-size:14.5px;font-weight:750;margin:0}
+  .bv .count{font-size:12px;color:var(--muted)}
+  .bv .ttscroll{overflow-x:auto}
+  .bv .tt{width:100%;border-collapse:collapse;font-size:13.5px;min-width:460px}
+  .bv .tt th{text-align:left;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 10px 10px;border-bottom:1px solid var(--line)}
+  .bv .tt td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .bv .tt tr:last-child td{border-bottom:0}
+  .bv .tid{color:var(--brand);font-weight:600;font-size:12px}
+  .bv .ttitle{font-weight:600;color:var(--ink)} .bv .tsub{display:block;font-size:10.5px;color:var(--muted);font-weight:400;margin-top:2px}
+  .bv .towner{white-space:nowrap;color:var(--ink)}
+  .bv .tdim{color:var(--muted);font-size:12px}
+  .bv .roster{display:flex;flex-direction:column;gap:9px}
+  .bv .rr{display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid var(--line);border-radius:13px;background:var(--surface)}
+  .bv .rr-av{font-size:17px;flex:none;width:24px;text-align:center}
+  .bv .rr-name{display:flex;flex-direction:column;font-size:14px;font-weight:650;min-width:56px}
+  .bv .rr-code{font-size:9.5px;color:var(--muted);font-weight:400;font-family:var(--mono)}
+  .bv .rr .chip{margin-left:auto}
+  .bv .rr-task{font-size:11px;color:var(--muted);flex:none;font-family:var(--mono)}
+  .bv .chat{display:flex;flex-direction:column;gap:10px}
+  .bv .msg{display:flex;gap:11px;align-items:flex-start}
+  .bv .msg-av{font-size:16px;flex:none;width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line);border-radius:9px}
+  .bv .msg-b{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:9px 14px;font-size:13.5px;color:var(--ink)}
+  .bv .msg.rej .msg-b{background:var(--alert-s);border-color:#F1CFCF}
+  .bv .msg-who{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:2px}
+  .bv .msg.rej .msg-who{color:var(--alert)}
+  .bv .bfoot{margin-top:6px;font-size:11px;color:var(--muted);text-align:right;font-family:var(--mono)}
+
+  .foot{border-top:1px solid var(--line);background:var(--surface)}
+  .foot .wrap{padding-top:26px;padding-bottom:26px;font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:7px 22px;align-items:center}
+  .foot code{font-family:var(--mono);color:var(--brand)} .foot b{color:var(--ink);font-weight:600}
+  .foot .fbrand{font-weight:800;color:var(--ink);font-size:14px;margin-right:auto}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="#top">
+    <span class="logo">H</span>
+    <span><span class="bname">Harness</span><br><span class="bsub">AI 编排运行时</span></span>
+  </a>
+  <div class="links">
+    <a class="nav-link" href="#how">工作原理</a>
+    <a class="nav-link" href="#exec">执行模型</a>
+    <a class="nav-link" href="#features">特性</a>
+    <a class="nav-link" href="#quickstart">快速上手</a>
+    <a class="cta" href="#demo">现场演示</a>
+  </div>
+</nav>
+
+<a id="top"></a>
+
+<!-- ════ Hero ════ -->
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">开源 · AI 编排运行时</span>
+    <h1>把一个需求,拆给多个 Agent<br>按阶段接力,<span class="alt">不合格就打回返工</span></h1>
+    <p class="lede">Harness 让六个角色身份按门禁接力推进一条需求:每道门禁人工确认放行,<b>验收不过自动打回上一棒返工</b>,返工—复验循环到通过;轮次触顶则熔断、转人工裁决。事实源单一、单写者写保护、多需求并行。</p>
+    <div class="cta-row">
+      <a class="btn primary" href="#demo">▸ 查看现场演示</a>
+      <a class="btn" href="#quickstart">快速上手</a>
+    </div>
+
+    <div class="pipe" aria-label="六阶段流水线:产品 → 架构 → 交互 → 前端 → 测试 → 审查">
+      <span class="pnode"><span>产品</span><small>G1</small></span><span class="par">→</span>
+      <span class="pnode"><span>架构</span><small>G2</small></span><span class="par">→</span>
+      <span class="pnode"><span>交互</span><small>G3</small></span><span class="par">→</span>
+      <span class="pnode"><span>前端</span><small>G4</small></span><span class="par">→</span>
+      <span class="pnode qa"><span>测试</span><small>G5</small></span><span class="par">→</span>
+      <span class="pnode"><span>审查</span><small>G6</small></span>
+    </div>
+    <p class="rework-note"><b>↩ 打回返工</b> 测试不过 → 弹回前端,只修问题清单内项 → 复验 · <code>reworkRounds++</code> · 触顶 <code>maxRounds</code> 熔断转人工</p>
+  </div>
+</header>
+
+<!-- ════ 工作原理 ════ -->
+<section class="sec" id="how">
+  <div class="wrap">
+    <span class="eyebrow">工作原理</span>
+    <h2 class="sec-h">六阶段主线 + 打回返工循环</h2>
+    <p class="sec-sub">每道门禁(Gn)都是一次人工确认。light 档可裁掉交互与审查两道门,小改动不必走全流程。</p>
+    <div class="stages">
+      <div class="stage"><span class="gate">G1</span><h3>需求提炼</h3><div class="role">product</div><p>把诉求收敛成范围、用户路径、验收标准与待确认项。</p></div>
+      <div class="stage"><span class="gate">G2</span><h3>模块扫描</h3><div class="role">architecture</div><p>定技术边界、目录影响、契约约束与组件复用策略。</p></div>
+      <div class="stage skip"><span class="gate">G3</span><h3>交互对齐</h3><div class="role">ux</div><p>产出页面地图、状态矩阵、组件映射;登记交互稿。</p><span class="skiptag">light 档可跳过</span></div>
+      <div class="stage"><span class="gate">G4</span><h3>前端实现</h3><div class="role">frontend</div><p>落地页面/组件/接口/状态/文案,补齐 loading、空、错、权限态。</p></div>
+      <div class="stage"><span class="gate">G5</span><h3>校验</h3><div class="role">qa</div><p>按真实链路 + 契约一致性验证,运行时取证,出质量结论。</p></div>
+      <div class="stage skip"><span class="gate">G6</span><h3>交付前审查</h3><div class="role">review</div><p>只读风险审查,识别回归与验证缺口,给发布建议。</p><span class="skiptag">light 档可跳过</span></div>
+    </div>
+
+    <div class="loop-wrap">
+      <div class="loop-steps">
+        <div class="lstep"><span class="ix">1</span><div><h4>前端交接 <code>ai:post --kind done</code></h4><p>实现完成产出 handoff,人工确认后登记交接物,测试才进场。</p></div></div>
+        <div class="lstep"><span class="ix">2</span><div><h4>测试验证</h4><p>按真实链路 + 字段契约逐项核验,采集请求/控制台证据。</p></div></div>
+        <div class="lstep bounce"><span class="ix">↩</span><div><h4>不过 → 打回 <code>ai:post --kind reject</code></h4><p>带编号问题清单弹回前端;reworkRounds += 1,只修清单内项,不扩范围。</p></div></div>
+        <div class="lstep"><span class="ix">3</span><div><h4>复验 → 回到第 2 步</h4><p>修复后重新交接复测,通过则放行 G5 进审查;仍不过再返工一轮。</p></div></div>
+        <div class="lstep ok"><span class="ix">✓</span><div><h4>通过 <code>ai:post --kind pass</code></h4><p>门禁 G5 放行,交给审查身份做交付前的只读检查。</p></div></div>
+      </div>
+      <div class="breaker">
+        <div class="b-title">返工熔断 · circuit breaker</div>
+        <div class="rounds"><span class="r used">轮 1</span><span class="arr">→</span><span class="r used">轮 2</span><span class="arr">→</span><span class="r used">轮 3</span><span class="arr">→</span><span class="trip">熔断</span></div>
+        <p>每次 <code>ai:retry</code> 计一轮返工。轮次达 <code>maxRounds</code>(默认 3),熔断器跳闸:<b style="color:var(--ink)">拒绝再次回流</b>,升级人工裁决——避免前端↔测试之间无限打转。</p>
+        <p style="color:var(--muted);font-size:12px">状态持久化在 run 的 <code>reworkState</code>,熔断由状态机强制,不靠口头约定。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 执行模型 ════ -->
+<section class="sec" id="exec">
+  <div class="wrap">
+    <span class="eyebrow">执行模型 · 任务怎么真正被执行</span>
+    <h2 class="sec-h">不是"会用工具的 Agent",是按类型分流的编排器</h2>
+    <p class="sec-sub">Harness 本身是确定性状态机,不跑 LLM 工具循环。它把每个任务<b>按类型路由到对应执行器</b>:能确定性验证的就跑真实命令,需要创作的才交给具备工具能力的编码 Agent;两条道都受角色门禁约束。</p>
+    <div class="features" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))">
+      <div class="feat"><div class="fi">🧩</div><h3>适配器路由</h3><p>调度器按 <code>task.type</code> 分流:<code>validation</code> 走本地校验适配器,其余(需求/扫描/方案/实现/审查)走 Agent 适配器。同一条流水线里两种执行器并存。</p></div>
+      <div class="feat"><div class="fi">🛠️</div><h3>校验 = 跑真实命令</h3><p>校验任务直接在工作区 <code>exec</code> 仓库脚本(如 <code>lint</code> / <code>typecheck</code>),凭<b>退出码</b>判定 <code>done</code> / <code>failed</code> / <code>blocked</code>,每条命令产一条结构化证据——绝不让 LLM "口头说通过"。</p></div>
+      <div class="feat"><div class="fi">🤖</div><h3>AI 任务 = 工具型编码 Agent</h3><p>创作类任务委托给具备<b>读写文件、跑命令</b>能力的编码 Agent(Cursor SDK / composer)在真实仓库根目录执行;harness 只负责注入角色 prompt、任务边界与输出契约。</p></div>
+      <div class="feat"><div class="fi">⛔</div><h3>工具级门禁</h3><p>每个角色声明 <code>allowedTaskTypes</code>;领到不被允许的任务类型直接 <code>blocked</code>。无 API Key / SDK 缺失 / 角色未注册,都返回结构化阻断,不会被当成成功。</p></div>
+    </div>
+    <p class="qs-note">没有"skill"概念:能力来自<b>真实命令执行</b> + <b>委托的工具型 Agent</b>。该用确定性脚本的地方就不让模型猜,该创作的地方才上 Agent。</p>
+  </div>
+</section>
+
+<!-- ════ 特性 ════ -->
+<section class="sec" id="features">
+  <div class="wrap">
+    <span class="eyebrow">核心特性</span>
+    <h2 class="sec-h">为多 Agent 协作而设计</h2>
+    <p class="sec-sub">把"谁在做、做到哪一棒、过没过门禁"变成可强制、可追溯的运行态,而不是一段口头约定。</p>
+    <div class="features">
+      <div class="feat"><div class="fi">🚦</div><h3>阶段门禁</h3><p>六个角色按阶段接力,每道门禁(G1–G6)需人工确认才放行,关键交接不被悄悄跳过。</p></div>
+      <div class="feat"><div class="fi">↩️</div><h3>打回—返工熔断</h3><p>验收不过带问题清单打回上一棒,<code>reworkRounds</code> 计数;触顶 <code>maxRounds</code> 自动熔断,转人工裁决。</p></div>
+      <div class="feat"><div class="fi">📥</div><h3>拉取式执行</h3><p>任务进就绪队列由 worker 轮询领取并上 <code>lease</code> 租约;依赖未完成不进队列,既不空转也不拿半成品开测。</p></div>
+      <div class="feat"><div class="fi">🔒</div><h3>单写者写保护</h3><p>同一 RUN 单写者:CAS 版本号 + 目录锁,外来写以 revision mismatch 被拒,杜绝并发覆盖。</p></div>
+      <div class="feat"><div class="fi">🧵</div><h3>多 RUN 并行</h3><p>每条 RUN 独立运行态 / 锁 / owner,跨 RUN 全并行;改同一代码区前需显式登记冲突并协调。</p></div>
+      <div class="feat"><div class="fi">🔗</div><h3>契约预检</h3><p>进实现前对齐 <b>业务字段 ↔ 接口契约 ↔ 前端类型 ↔ 渲染/提交</b>,任一环对不上记为 contract gap 并阻断,不许相似字段顶替。</p></div>
+      <div class="feat"><div class="fi">🎚️</div><h3>分档裁剪</h3><p><code>light</code> / <code>standard</code> / <code>full</code> 按变更规模裁剪门禁链,小改动走轻量路径,不一刀切。</p></div>
+      <div class="feat"><div class="fi">💬</div><h3>聊天通道播报</h3><p>每次交接 = 一条机器人消息,投影到 IM(Slack / 飞书 / 钉钉等)与 <code>channel.md</code>,全员可见、可追溯。</p></div>
+      <div class="feat"><div class="fi">📄</div><h3>单一事实源</h3><p>事实源是 <code>runs/&lt;RUN&gt;.json</code>;台账、门禁、群对话都是它的投影,改派生件不影响真值。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 快速上手 ════ -->
+<section class="sec" id="quickstart">
+  <div class="wrap">
+    <span class="eyebrow">快速上手</span>
+    <h2 class="sec-h">几条命令驱动一条 RUN</h2>
+    <p class="sec-sub">定义任务后,用代理脚本规划、执行、再投影。无需后端服务,运行态都落在仓库文件里。</p>
+    <div class="code">
+      <button class="copy" type="button">复制</button>
+<pre><span class="cmt"># 安装依赖</span>
+<span class="cmd">pnpm install</span>
+
+<span class="cmt"># 1) 规划:载入任务、建/刷新运行态,投影台账 + 门禁 + 报告</span>
+<span class="cmd">pnpm ai:plan  -- --run RUN-20260623-001</span>
+
+<span class="cmt"># 2) 执行:领取就绪任务、执行、提交证据(lock + CAS)、刷新投影</span>
+<span class="cmd">pnpm ai:run   -- --run RUN-20260623-001</span>
+
+<span class="cmt"># 3) 仅重新投影(不执行),未变更的产物自动跳过</span>
+<span class="cmd">pnpm ai:sync  -- --run RUN-20260623-001</span>
+
+<span class="cmt"># 不过就打回,修复后把可重试任务移回就绪</span>
+<span class="cmd">pnpm ai:retry -- --run RUN-20260623-001 --reason "fixed"</span>
+
+<span class="cmt"># 打印机器可读运行摘要</span>
+<span class="cmd">pnpm ai:report -- --run RUN-20260623-001</span></pre>
+    </div>
+    <p class="qs-note">检查产物:运行态 <code>runs/&lt;RUN&gt;.json</code> · 证据链 <code>evidence/&lt;RUN&gt;/</code> · 门禁 <code>gate-status.md</code> · 看板见下方现场演示。</p>
+  </div>
+</section>
+
+<!-- ════ 现场演示 ════ -->
+<section class="sec" id="demo">
+  <div class="wrap">
+    <span class="eyebrow">现场演示 · Live console</span>
+    <h2 class="sec-h">点进去看每条 RUN 在哪一棒</h2>
+    <div class="demo-intro"><p>这是 Harness 实际产出的控制台快照。<b>点任意一张 RUN 卡片</b>进入它的任务执行看板,看阶段接力轨、每个任务在谁手上、聊天通道里的交接对话;再点左上角<b>返回总览</b>。纯前端、离线可用。</p></div>
+
+    <div class="demo-frame">
+      <div class="demo-bar">
+        <span class="traffic"><i></i><i></i><i></i></span>
+        <button class="back" id="demoBack" type="button">‹ 返回总览</button>
+        <span class="addr" id="demoAddr">dashboard/<b>overview.html</b></span>
+        <span class="live">snapshot</span>
+      </div>
+      <div class="demo-stage">
+
+        <!-- 总览 -->
+        <div class="demo-view ov" id="view-overview">
+          <header class="ohead">
+            <div><span class="o-eye">编排总览 · All runs</span><h3>全部 RUN 总览</h3><div class="ohint">点击任意卡片进入该 RUN 看板 ↓</div></div>
+            <div class="ocount"><b>2</b> 活跃 <span>/ 3 总计</span></div>
+          </header>
+          <div class="ogrid">
+            <button class="ocard" type="button" data-run="RUN-LOGIN-01">
+              <div class="oc-top"><span class="oc-id">RUN-LOGIN-01</span><span class="status status-running">进行中</span></div>
+              <div class="oc-segs"><i class="seg done"></i><i class="seg done"></i><i class="seg done"></i><i class="seg done"></i><i class="seg active"></i><i class="seg"></i></div>
+              <div class="oc-stage">当前在 <b>校验</b> · 门禁 4/6</div>
+              <div class="oc-meta"><span><b>standard</b> 档</span><span>任务 <b>4/6</b></span><span>返工 <b>1/3</b></span><span>群主 <b>lead-a</b></span></div>
+              <span class="oc-open">查看看板 →</span>
+            </button>
+            <button class="ocard" type="button" data-run="RUN-BRAND-02">
+              <div class="oc-top"><span class="oc-id">RUN-BRAND-02</span><span class="status status-blocked">受阻</span></div>
+              <div class="oc-segs"><i class="seg done"></i><i class="seg done"></i><i class="seg done"></i><i class="seg blocked"></i><i class="seg"></i><i class="seg"></i></div>
+              <div class="oc-stage">当前在 <b>前端实现</b> · 门禁 3/6</div>
+              <div class="oc-meta"><span><b>full</b> 档</span><span>任务 <b>1/3</b></span><span>返工 <b>2/3</b></span><span>群主 <b>lead-b</b></span></div>
+              <span class="oc-open">查看看板 →</span>
+            </button>
+            <button class="ocard idle" type="button" data-run="RUN-COPY-03">
+              <div class="oc-top"><span class="oc-id">RUN-COPY-03</span><span class="status status-completed">已交付</span></div>
+              <div class="oc-segs"><i class="seg done"></i><i class="seg done"></i><i class="seg done"></i><i class="seg done"></i><i class="seg done"></i><i class="seg done"></i></div>
+              <div class="oc-stage">当前在 <b>全部通过</b> · 门禁 6/6</div>
+              <div class="oc-meta"><span><b>light</b> 档</span><span>任务 <b>1/1</b></span><span>返工 <b>0/3</b></span><span>群主 <b>lead-a</b></span></div>
+              <span class="oc-open">查看看板 →</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 看板:RUN-LOGIN-01 -->
+        <div class="demo-view bv" id="view-RUN-LOGIN-01" hidden>
+          <header class="bhead">
+            <div class="bh-l"><span class="b-eye">任务对接群 · Task channel</span><h3>RUN-LOGIN-01</h3><span class="pipe-name">page-delivery</span></div>
+            <div class="bh-r"><span class="status status-running">进行中</span>
+              <div class="metas"><span class="meta"><b>档位</b><i>standard</i></span><span class="meta"><b>群主</b><i>lead-a</i></span><span class="meta"><b>返工</b><i>1/3</i></span></div>
+            </div>
+          </header>
+          <div class="railscroll"><section class="rail"><div class="rnode done"><span class="rdot">✓</span><span class="rsn">需求提炼</span><span class="rgid mono">G1</span></div><div class="rnode done lit"><span class="rdot">✓</span><span class="rsn">模块扫描</span><span class="rgid mono">G2</span></div><div class="rnode done lit"><span class="rdot">✓</span><span class="rsn">交互对齐</span><span class="rgid mono">G3</span></div><div class="rnode done lit"><span class="rdot">✓</span><span class="rsn">前端实现</span><span class="rgid mono">G4</span></div><div class="rnode active lit"><span class="rdot">5</span><span class="rsn">校验</span><span class="rgid mono">G5</span></div><div class="rnode todo"><span class="rdot">6</span><span class="rsn">交付审查</span><span class="rgid mono">G6</span></div></section></div>
+          <div class="cols">
+            <section class="card">
+              <div class="card-h"><h4>任务在哪一棒</h4><span class="count">6 个任务</span></div>
+              <div class="ttscroll"><table class="tt">
+                <thead><tr><th>任务</th><th>内容</th><th>负责身份</th><th>状态</th><th>依赖</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono tid">PROD-1</td><td class="ttitle">登录页需求提炼<span class="tsub mono">requirement</span></td><td class="towner">🧭 产品</td><td><span class="chip done">已完成</span></td><td class="mono tdim">—</td></tr>
+                  <tr><td class="mono tid">ARCH-1</td><td class="ttitle">鉴权链路与契约边界<span class="tsub mono">scan</span></td><td class="towner">🏛️ 架构</td><td><span class="chip done">已完成</span></td><td class="mono tdim">PROD-1</td></tr>
+                  <tr><td class="mono tid">UX-1</td><td class="ttitle">登录页交互稿与状态矩阵<span class="tsub mono">solution</span></td><td class="towner">🎨 交互</td><td><span class="chip done">已完成</span></td><td class="mono tdim">ARCH-1</td></tr>
+                  <tr><td class="mono tid">FE-1</td><td class="ttitle">登录页实现(验证码+CSRF+错误态)<span class="tsub mono">implementation</span></td><td class="towner">💻 前端</td><td><span class="chip done">已完成</span></td><td class="mono tdim">UX-1</td></tr>
+                  <tr><td class="mono tid">QA-1</td><td class="ttitle">登录链路验证(回归第1轮)<span class="tsub mono">validation</span></td><td class="towner">🧪 测试</td><td><span class="chip active">进行中</span></td><td class="mono tdim">FE-1</td></tr>
+                  <tr><td class="mono tid">REV-1</td><td class="ttitle">交付前审查<span class="tsub mono">review</span></td><td class="towner">🔎 审查</td><td><span class="chip wait">待开始</span></td><td class="mono tdim">QA-1</td></tr>
+                </tbody>
+              </table></div>
+            </section>
+            <section class="card">
+              <div class="card-h"><h4>各身份在岗</h4></div>
+              <div class="roster">
+                <div class="rr"><span class="rr-av">🧭</span><span class="rr-name">产品<span class="rr-code">product</span></span><span class="chip done">已交付</span></div>
+                <div class="rr"><span class="rr-av">🏛️</span><span class="rr-name">架构<span class="rr-code">architecture</span></span><span class="chip done">已交付</span></div>
+                <div class="rr"><span class="rr-av">🎨</span><span class="rr-name">交互<span class="rr-code">ux</span></span><span class="chip done">已交付</span></div>
+                <div class="rr"><span class="rr-av">💻</span><span class="rr-name">前端<span class="rr-code">frontend</span></span><span class="chip done">已交付</span></div>
+                <div class="rr"><span class="rr-av">🧪</span><span class="rr-name">测试<span class="rr-code">qa</span></span><span class="chip active">进行中</span><span class="rr-task">QA-1</span></div>
+                <div class="rr"><span class="rr-av">🔎</span><span class="rr-name">审查<span class="rr-code">review</span></span><span class="chip wait">等待上游</span></div>
+                <div class="rr"><span class="rr-av">🧰</span><span class="rr-name">调度<span class="rr-code">lead</span></span><span class="chip active">调度中</span></div>
+              </div>
+            </section>
+          </div>
+          <section class="card">
+            <div class="card-h"><h4>群最新动态</h4><span class="count mono">channel.md</span></div>
+            <div class="chat">
+              <div class="msg"><span class="msg-av">🧰</span><div class="msg-b"><span class="msg-who">调度 · 建群集合 · FE-1</span><span>🆕 任务对接群已建群,全员集合</span></div></div>
+              <div class="msg"><span class="msg-av">💻</span><div class="msg-b"><span class="msg-who">前端 · 完成交接 → 测试 · FE-1</span><span>登录页完成,交接测试</span></div></div>
+              <div class="msg rej"><span class="msg-av">🧪</span><div class="msg-b"><span class="msg-who">测试 · 打回 → 前端 · FE-1</span><span>验证码错误提示缺失,请调整</span></div></div>
+              <div class="msg"><span class="msg-av">💻</span><div class="msg-b"><span class="msg-who">前端 · 完成交接 → 测试 · FE-1</span><span>已补错误提示,复测</span></div></div>
+              <div class="msg"><span class="msg-av">🧪</span><div class="msg-b"><span class="msg-who">测试 · 说明 · QA-1</span><span>回归第1轮验证中…</span></div></div>
+            </div>
+          </section>
+          <p class="bfoot">快照 示例快照 · 事实源 runs/RUN-LOGIN-01.json</p>
+        </div>
+
+        <!-- 看板:RUN-BRAND-02 -->
+        <div class="demo-view bv" id="view-RUN-BRAND-02" hidden>
+          <header class="bhead">
+            <div class="bh-l"><span class="b-eye">任务对接群 · Task channel</span><h3>RUN-BRAND-02</h3><span class="pipe-name">page-delivery</span></div>
+            <div class="bh-r"><span class="status status-blocked">受阻</span>
+              <div class="metas"><span class="meta"><b>档位</b><i>full</i></span><span class="meta"><b>群主</b><i>lead-b</i></span><span class="meta"><b>返工</b><i>2/3</i></span></div>
+            </div>
+          </header>
+          <div class="railscroll"><section class="rail"><div class="rnode done"><span class="rdot">✓</span><span class="rsn">需求提炼</span><span class="rgid mono">G1</span></div><div class="rnode done lit"><span class="rdot">✓</span><span class="rsn">模块扫描</span><span class="rgid mono">G2</span></div><div class="rnode done lit"><span class="rdot">✓</span><span class="rsn">交互对齐</span><span class="rgid mono">G3</span></div><div class="rnode blocked lit"><span class="rdot">!</span><span class="rsn">前端实现</span><span class="rgid mono">G4</span></div><div class="rnode todo"><span class="rdot">5</span><span class="rsn">校验</span><span class="rgid mono">G5</span></div><div class="rnode todo"><span class="rdot">6</span><span class="rsn">交付审查</span><span class="rgid mono">G6</span></div></section></div>
+          <div class="cols">
+            <section class="card">
+              <div class="card-h"><h4>任务在哪一棒</h4><span class="count">3 个任务</span></div>
+              <div class="ttscroll"><table class="tt">
+                <thead><tr><th>任务</th><th>内容</th><th>负责身份</th><th>状态</th><th>依赖</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono tid">P2</td><td class="ttitle">品牌管理需求</td><td class="towner">🧭 产品</td><td><span class="chip done">已完成</span></td><td class="mono tdim">—</td></tr>
+                  <tr><td class="mono tid">FE2</td><td class="ttitle">品牌管理页实现</td><td class="towner">💻 前端</td><td><span class="chip blocked">受阻</span></td><td class="mono tdim">P2</td></tr>
+                  <tr><td class="mono tid">QA2</td><td class="ttitle">品牌管理验证</td><td class="towner">🧪 测试</td><td><span class="chip wait">待开始</span></td><td class="mono tdim">FE2</td></tr>
+                </tbody>
+              </table></div>
+            </section>
+            <section class="card">
+              <div class="card-h"><h4>各身份在岗</h4></div>
+              <div class="roster">
+                <div class="rr"><span class="rr-av">🧭</span><span class="rr-name">产品<span class="rr-code">product</span></span><span class="chip done">已交付</span></div>
+                <div class="rr"><span class="rr-av">💻</span><span class="rr-name">前端<span class="rr-code">frontend</span></span><span class="chip blocked">受阻</span><span class="rr-task">FE2</span></div>
+                <div class="rr"><span class="rr-av">🧪</span><span class="rr-name">测试<span class="rr-code">qa</span></span><span class="chip wait">等待上游</span></div>
+                <div class="rr"><span class="rr-av">🧰</span><span class="rr-name">调度<span class="rr-code">lead</span></span><span class="chip active">调度中</span></div>
+              </div>
+            </section>
+          </div>
+          <section class="card">
+            <div class="card-h"><h4>群最新动态</h4><span class="count mono">channel.md</span></div>
+            <div class="chat"><div class="msg"><div class="msg-b"><span class="tdim">群里还没有动态。</span></div></div></div>
+          </section>
+          <p class="bfoot">快照 示例快照 · 事实源 runs/RUN-BRAND-02.json</p>
+        </div>
+
+        <!-- 看板:RUN-COPY-03 -->
+        <div class="demo-view bv" id="view-RUN-COPY-03" hidden>
+          <header class="bhead">
+            <div class="bh-l"><span class="b-eye">任务对接群 · Task channel</span><h3>RUN-COPY-03</h3><span class="pipe-name">page-delivery</span></div>
+            <div class="bh-r"><span class="status status-completed">已交付</span>
+              <div class="metas"><span class="meta"><b>档位</b><i>light</i></span><span class="meta"><b>群主</b><i>lead-a</i></span><span class="meta"><b>返工</b><i>0/3</i></span></div>
+            </div>
+          </header>
+          <div class="railscroll"><section class="rail"><div class="rnode done"><span class="rdot">✓</span><span class="rsn">需求提炼</span><span class="rgid mono">G1</span></div><div class="rnode done lit"><span class="rdot">✓</span><span class="rsn">模块扫描</span><span class="rgid mono">G2</span></div><div class="rnode done lit"><span class="rdot">✓</span><span class="rsn">交互对齐</span><span class="rgid mono">G3</span></div><div class="rnode done lit"><span class="rdot">✓</span><span class="rsn">前端实现</span><span class="rgid mono">G4</span></div><div class="rnode done lit"><span class="rdot">✓</span><span class="rsn">校验</span><span class="rgid mono">G5</span></div><div class="rnode done lit"><span class="rdot">✓</span><span class="rsn">交付审查</span><span class="rgid mono">G6</span></div></section></div>
+          <div class="cols">
+            <section class="card">
+              <div class="card-h"><h4>任务在哪一棒</h4><span class="count">1 个任务</span></div>
+              <div class="ttscroll"><table class="tt">
+                <thead><tr><th>任务</th><th>内容</th><th>负责身份</th><th>状态</th><th>依赖</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono tid">C1</td><td class="ttitle">文案修订</td><td class="towner">💻 前端</td><td><span class="chip done">已完成</span></td><td class="mono tdim">—</td></tr>
+                </tbody>
+              </table></div>
+            </section>
+            <section class="card">
+              <div class="card-h"><h4>各身份在岗</h4></div>
+              <div class="roster">
+                <div class="rr"><span class="rr-av">💻</span><span class="rr-name">前端<span class="rr-code">frontend</span></span><span class="chip done">已交付</span></div>
+                <div class="rr"><span class="rr-av">🧰</span><span class="rr-name">调度<span class="rr-code">lead</span></span><span class="chip active">调度中</span></div>
+              </div>
+            </section>
+          </div>
+          <section class="card">
+            <div class="card-h"><h4>群最新动态</h4><span class="count mono">channel.md</span></div>
+            <div class="chat"><div class="msg"><div class="msg-b"><span class="tdim">群里还没有动态。</span></div></div></div>
+          </section>
+          <p class="bfoot">快照 示例快照 · 事实源 runs/RUN-COPY-03.json</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    <span class="fbrand">Harness</span>
+    <span><b>事实源</b> <code>runs/&lt;RUN&gt;.json</code> — 台账与群对话都是它的投影</span>
+    <span><b>门禁</b> 由工具强制,关键交接需人工确认</span>
+    <span>本页为静态演示快照,离线可用</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  /* —— 演示控制台:总览 ⇄ 看板 —— */
+  var ov = document.getElementById('view-overview');
+  var back = document.getElementById('demoBack');
+  var addr = document.getElementById('demoAddr');
+  var boards = {};
+  Array.prototype.forEach.call(document.querySelectorAll('.demo-view.bv'), function(el){
+    boards[el.id.replace('view-','')] = el;
+  });
+  function reflow(el){ el.classList.remove('demo-view'); void el.offsetWidth; el.classList.add('demo-view'); }
+  function hideAll(){ ov.hidden = true; Object.keys(boards).forEach(function(k){ boards[k].hidden = true; }); }
+  function showOverview(){ hideAll(); ov.hidden = false; back.style.display = 'none'; addr.innerHTML = 'dashboard/<b>overview.html</b>'; reflow(ov); }
+  function showBoard(run){ var el = boards[run]; if(!el){ return; } hideAll(); el.hidden = false; back.style.display = 'inline-flex'; addr.innerHTML = 'dashboard/runs/' + run + '/<b>board.html</b>'; reflow(el); }
+  Array.prototype.forEach.call(document.querySelectorAll('.ov .ocard'), function(card){
+    card.addEventListener('click', function(){ showBoard(card.getAttribute('data-run')); });
+  });
+  back.addEventListener('click', showOverview);
+
+  /* —— 复制命令 —— */
+  Array.prototype.forEach.call(document.querySelectorAll('.copy'), function(btn){
+    btn.addEventListener('click', function(){
+      var pre = btn.parentNode.querySelector('pre');
+      if(!pre){ return; }
+      var lines = pre.innerText.split('\n').filter(function(l){ return l && l.trim().charAt(0) !== '#'; });
+      var text = lines.join('\n').trim();
+      var done = function(){ btn.textContent = '已复制'; btn.classList.add('done'); setTimeout(function(){ btn.textContent = '复制'; btn.classList.remove('done'); }, 1600); };
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done, done); }
+      else { var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); }catch(e){} document.body.removeChild(ta); done(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harness.local/ai/runtime/schemas/packet.schema.json",
+  "title": "ContextPacket",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["packetType", "runId", "role", "goal", "mustRead", "acceptance"],
+  "properties": {
+    "packetType": {
+      "type": "string",
+      "enum": ["run_summary", "role_packet"]
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "role": {
+      "type": "string",
+      "minLength": 1
+    },
+    "displayNameZh": {
+      "type": "string",
+      "minLength": 1
+    },
+    "roleTypeZh": {
+      "type": "string",
+      "minLength": 1
+    },
+    "summaryZh": {
+      "type": "string",
+      "minLength": 1
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mustRead": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "allowedScope": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "keyContext": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "acceptance": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "optionalBacktracking": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "number", "boolean"]
+      }
+    }
+  }
+}

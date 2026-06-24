@@ -1,0 +1,37 @@
+{
+  "name": "harness",
+  "version": "0.1.0",
+  "description": "Harness — an AI delivery orchestration runtime: multi-agent stage handoffs, human gates, bounce-back rework with a circuit breaker, and a single source of truth.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.15.0",
+  "keywords": [
+    "ai",
+    "agents",
+    "orchestration",
+    "multi-agent",
+    "workflow",
+    "pipeline",
+    "gates"
+  ],
+  "scripts": {
+    "ai:init": "pnpm --dir tools/ai-orchestrator run ai:init",
+    "ai:plan": "pnpm --dir tools/ai-orchestrator run ai:plan",
+    "ai:run": "pnpm --dir tools/ai-orchestrator run ai:run",
+    "ai:sync": "pnpm --dir tools/ai-orchestrator run ai:sync",
+    "ai:report": "pnpm --dir tools/ai-orchestrator run ai:report",
+    "ai:validate-project": "pnpm --dir tools/ai-orchestrator run ai:validate-project",
+    "ai:approve": "pnpm --dir tools/ai-orchestrator run ai:approve",
+    "ai:artifact": "pnpm --dir tools/ai-orchestrator run ai:artifact",
+    "ai:handoff": "pnpm --dir tools/ai-orchestrator run ai:handoff",
+    "ai:post": "pnpm --dir tools/ai-orchestrator run ai:post",
+    "ai:board": "pnpm --dir tools/ai-orchestrator run ai:board",
+    "ai:overview": "pnpm --dir tools/ai-orchestrator run ai:overview",
+    "ai:reject": "pnpm --dir tools/ai-orchestrator run ai:reject",
+    "ai:retry": "pnpm --dir tools/ai-orchestrator run ai:retry",
+    "ai:recover": "pnpm --dir tools/ai-orchestrator run ai:recover",
+    "ai:pause": "pnpm --dir tools/ai-orchestrator run ai:pause",
+    "ai:resume": "pnpm --dir tools/ai-orchestrator run ai:resume",
+    "test": "pnpm --dir tools/ai-orchestrator run test"
+  }
+}

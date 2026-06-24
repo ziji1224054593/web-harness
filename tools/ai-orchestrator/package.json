@@ -1,0 +1,30 @@
+{
+  "name": "@harness/orchestrator",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Harness orchestration runtime: planner, scheduler, dispatcher, adapters, and Markdown/dashboard projections.",
+  "license": "MIT",
+  "scripts": {
+    "ai:init": "node commands/init.mjs",
+    "ai:plan": "node commands/plan.mjs",
+    "ai:run": "node commands/run.mjs",
+    "ai:sync": "node commands/sync.mjs",
+    "ai:report": "node commands/report.mjs",
+    "ai:validate-project": "node commands/validate-project.mjs",
+    "ai:approve": "node commands/approve.mjs",
+    "ai:artifact": "node commands/artifact.mjs",
+    "ai:handoff": "node commands/handoff.mjs",
+    "ai:post": "node commands/post.mjs",
+    "ai:board": "node commands/board.mjs",
+    "ai:overview": "node commands/overview.mjs",
+    "ai:reject": "node commands/reject.mjs",
+    "ai:retry": "node commands/retry.mjs",
+    "ai:recover": "node commands/recover.mjs",
+    "ai:pause": "node commands/pause.mjs",
+    "ai:resume": "node commands/resume.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@cursor/sdk": "^1.0.12"
+  }
+}

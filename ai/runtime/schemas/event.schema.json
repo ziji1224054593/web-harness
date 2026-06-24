@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harness.local/ai/runtime/schemas/event.schema.json",
+  "title": "OrchestratorEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "eventName", "occurredAt", "runId", "payload"],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "eventName": {
+      "type": "string",
+      "enum": [
+        "task.created",
+        "task.ready",
+        "task.started",
+        "task.completed",
+        "task.blocked",
+        "operator.action",
+        "gate.updated",
+        "report.generated",
+        "channel.message"
+      ]
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "taskId": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "object"
+    }
+  }
+}

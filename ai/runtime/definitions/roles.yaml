@@ -1,0 +1,127 @@
+roles:
+  lead_orchestrator:
+    displayNameZh: 多角色协作调度官
+    roleTypeZh: 编排与分发角色
+    summaryZh: 负责任务拆解、上下文分发、Gate 控制和多角色协作推进。
+    prompt: ai/ai-prompts/lead_orchestrator.md
+    capabilities:
+      - planning
+      - routing
+      - gate_control
+      - context_dispatch
+    allowedTaskTypes:
+      - solution
+      - report
+    pipelineParticipation: default
+    readPolicy: orchestrator_summary_first
+  product:
+    displayNameZh: 产品需求助手
+    roleTypeZh: 需求澄清角色
+    summaryZh: 负责需求澄清、范围界定、验收标准和待确认项整理。
+    prompt: ai/ai-prompts/product_agent.md
+    capabilities:
+      - requirement
+      - scope
+    allowedTaskTypes:
+      - requirement
+    pipelineParticipation: default
+    readPolicy: shared_context_first
+  architecture:
+    displayNameZh: 前端架构助手
+    roleTypeZh: 方案与边界角色
+    summaryZh: 负责技术边界、目录影响、状态策略和契约约束，不直接开发页面。
+    prompt: ai/ai-prompts/architecture_agent.md
+    capabilities:
+      - module_scan
+      - contract_alignment
+    allowedTaskTypes:
+      - scan
+    pipelineParticipation: default
+    readPolicy: shared_context_first
+  ux:
+    displayNameZh: 交互设计助手
+    roleTypeZh: 设计支持角色
+    summaryZh: 负责页面流程、状态矩阵、组件映射和关键交互说明。
+    prompt: ai/ai-prompts/ux_agent.md
+    capabilities:
+      - ux_flow
+      - state_matrix
+    allowedTaskTypes:
+      - solution
+    pipelineParticipation: optional_support
+    readPolicy: shared_context_first
+  frontend:
+    displayNameZh: 前端开发助手
+    roleTypeZh: 实现角色
+    summaryZh: 负责页面、组件、路由、API、状态管理和国际化的实际落地。
+    prompt: ai/ai-prompts/frontend_agent.md
+    capabilities:
+      - implementation
+      - i18n_alignment
+      - packet_execution
+    allowedTaskTypes:
+      - implementation
+    pipelineParticipation: default
+    readPolicy: role_packet_first
+  integration:
+    displayNameZh: 联调与契约核对助手
+    roleTypeZh: 联调支持角色
+    summaryZh: 负责核对 PRD、UX、OpenAPI 与前端实现之间的差异并推动闭环。
+    prompt: ai/ai-prompts/integration_agent.md
+    capabilities:
+      - api_alignment
+      - validation_support
+    allowedTaskTypes:
+      - report
+    pipelineParticipation: optional_support
+    readPolicy: optional_support_packet
+  qa:
+    displayNameZh: 测试验证助手
+    roleTypeZh: 验证角色
+    summaryZh: 负责测试设计、验证执行或验证清单整理，并输出质量结论。
+    prompt: ai/ai-prompts/qa_agent.md
+    capabilities:
+      - validation
+      - regression_checks
+      - packet_validation
+    allowedTaskTypes:
+      - validation
+    pipelineParticipation: default
+    readPolicy: role_packet_first
+  review:
+    displayNameZh: 交付审查助手
+    roleTypeZh: 只读审查角色
+    summaryZh: 负责交付前只读审查，识别行为风险、回归风险和验证缺口。
+    prompt: ai/ai-prompts/review_agent.md
+    capabilities:
+      - risk_review
+      - release_recommendation
+      - packet_review
+    allowedTaskTypes:
+      - review
+    pipelineParticipation: default
+    readPolicy: role_packet_first
+  devops:
+    displayNameZh: 前端工程与发布助手
+    roleTypeZh: 工程化支持角色
+    summaryZh: 负责构建、校验、质量门禁、工作流和发布准备。
+    prompt: ai/ai-prompts/devops_agent.md
+    capabilities:
+      - delivery_support
+      - workflow_operations
+    allowedTaskTypes:
+      - report
+    pipelineParticipation: optional_support
+    readPolicy: optional_support_packet
+  backend:
+    displayNameZh: 后端契约助手
+    roleTypeZh: 外部契约支持角色
+    summaryZh: 负责整理外部后端接口语义、字段口径、错误码和契约待确认项。
+    prompt: ai/ai-prompts/backend_agent.md
+    capabilities:
+      - api_contract
+      - external_backend_alignment
+    allowedTaskTypes:
+      - report
+    pipelineParticipation: optional_support
+    readPolicy: optional_support_packet

@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harness.local/ai/runtime/schemas/task.schema.json",
+  "title": "TaskSpec",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "type",
+    "ownerRole",
+    "priority",
+    "dependsOn",
+    "inputs",
+    "outputs",
+    "acceptance",
+    "gateTargets",
+    "status",
+    "evidenceRefs"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "enum": ["requirement", "scan", "solution", "implementation", "validation", "review", "report"]
+    },
+    "ownerRole": {
+      "type": "string",
+      "minLength": 1
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "dependsOn": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "contextPacketRefs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "acceptance": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "gateTargets": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["G1", "G2", "G3", "G4", "G5", "G6"]
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["todo", "ready", "running", "blocked", "done", "failed", "reviewed"]
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidenceRef"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "number", "boolean"]
+      }
+    },
+    "executionState": {
+      "$ref": "#/$defs/executionState"
+    }
+  },
+  "$defs": {
+    "evidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidenceId", "kind", "path", "summary", "createdAt"],
+      "properties": {
+        "evidenceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["analysis", "decision", "context_packet", "implementation", "validation", "review", "manual_override", "report_entry"]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "executionState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["leaseId", "claimedBy", "claimedAt", "leaseUntil", "attempt"],
+      "properties": {
+        "leaseId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claimedBy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claimedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "leaseUntil": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "attempt": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}
