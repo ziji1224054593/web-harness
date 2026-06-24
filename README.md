@@ -4,7 +4,9 @@
 
 Harness 把一个需求拆给多个角色身份(产品 → 架构 → 交互 → 前端 → 测试 → 审查),按 6 道门禁接力推进。它本身是**确定性编排状态机**,不是"会调工具的 Agent":能确定性验证的就跑真实命令,需要创作的才委托给具备工具能力的编码 Agent。
 
-可视化讲解与可交互演示见 [`tools/ai-orchestrator/dashboard/demo.html`](tools/ai-orchestrator/dashboard/demo.html)(用浏览器直接打开,离线可用)。
+**官网 / 可交互演示**:[`docs/index.html`](docs/index.html) —— 介绍能力、工作方式、流程、特点亮点与使用优势,内含可点击的现场演示控制台。用浏览器直接打开即可,离线、纯前端、零依赖。
+
+> 发布到 GitHub Pages:仓库 Settings → Pages → Source 选 `Deploy from a branch`,Branch 选 `main` + `/docs`。`docs/index.html` 是 [`tools/ai-orchestrator/dashboard/demo.html`](tools/ai-orchestrator/dashboard/demo.html) 的发布副本。
 
 ---
 
