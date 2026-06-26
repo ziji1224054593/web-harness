@@ -23,6 +23,66 @@ Harness 把一个需求拆给多个角色身份(产品 → 架构 → 交互 →
 
 ---
 
+### 有需求时如何和 Lead 对话
+
+当你拿到一个新需求,建议先让 `lead_orchestrator` 作为主入口。它会继承 `_shared-protocol.md` 的通用约束,再按 `lead_orchestrator.md` 的职责完成需求收敛、任务拆解、Gate 判断和角色分发。对话重点不是直接说"去开发",而是先把需求、范围、资料和约束交给 Lead,让它判断是否能进入下一阶段。
+
+推荐第一次对话这样说:
+
+```text
+你现在使用 `ai/ai-prompts/_shared-protocol.md` + `ai/ai-prompts/lead_orchestrator.md` 的身份工作。
+
+请作为 `lead_orchestrator` 处理一个新需求:
+- RUN_ID: RUN-20260626-LOGIN
+- 需求目标: 实现/修改/修复什么
+- 目标模块: 相关页面、菜单、路由或代码目录
+- 需求材料: PRD 链接/原型链接/截图/API 文档/用户补充说明
+- 已知边界: 哪些要做,哪些不要做
+- 验收口径: 用户最终怎么确认完成
+
+请先不要直接改业务代码。先完成:
+1. 判断需求属于哪个 tier(light/standard/full)
+2. 读取当前仓库相关摘要、契约和源码入口
+3. 梳理功能点清单和真实链路八问
+4. 识别需要 Product / Architecture / UX / Frontend / QA / Review 哪些身份参与
+5. 列出待人工确认项、阻断项和下一步命令
+6. 产出本轮 Lead 收敛结论草稿,等待我确认后再分发 role-packets
+```
+
+如果需求里有原型、截图或链接,要明确告诉 Lead:
+
+```text
+这个需求包含原型/截图。请先定位目标模块对应的原型界面和流程节点,保存截图证据并形成截图清单;在截图覆盖目标模块、并完成 PRD/API/现有实现对标前,不要进入 Frontend 分发。
+```
+
+如果需求涉及 API、字段、权限、枚举、状态流转、表单提交或详情回显,要明确告诉 Lead:
+
+```text
+这个需求涉及后端数据。请先完成契约预检:列出 endpoint、request/response schema、字段映射、枚举/字典来源、权限规则和 contract gap/conflict。契约不清时请阻断并列出需要人工确认的问题,不要让 Frontend 猜字段实现。
+```
+
+当 Lead 输出收敛草稿后,你需要用人工确认的方式继续对话:
+
+```text
+我确认本轮范围、真实链路、交互决策、接口契约和任务拆解。请继续定版 run-summary,生成各身份 role-packets,并告诉我下一步应该执行哪些 Harness 命令。
+```
+
+如果不确认,直接指出要改哪里:
+
+```text
+暂不确认。请缩小范围:本轮只做列表查询和详情查看,新增/编辑放到下一个 RUN。请更新 Gate 结论、任务拆解和待确认项。
+```
+
+Lead 的关键边界:
+
+- 不直接改业务实现源码;它负责收敛、拆解、分发、登记 artifact 和控制 Gate。
+- 不凭聊天记录或最新文件名判断当前有效输入;必须以 `ai/runtime/runs/<RUN_ID>.json` 和 `current-artifacts.md` 为准。
+- 未完成人工确认前,不应定版 `run-summary`、不应分发正式 `role-packets`、不应进入 Frontend。
+- 遇到交互不清回退 UX,契约不清回退 Architecture / Integration / Backend,业务边界不清回退 Product。
+
+---
+
+
 ## 目录结构
 
 ```text
@@ -92,6 +152,83 @@ pnpm ai:overview
 | `ai:report` | 打印机器可读运行摘要 |
 
 ---
+
+## 身份使用说明
+
+Harness 里的"身份"就是角色 id,写在任务的 `ownerRole`、群消息的 `--from` / `--to`、人工操作的 `--by` 以及每角色机器人环境变量后缀里。内置身份如下:
+
+- `product` — 产品需求助手,负责需求澄清、范围界定、验收标准和待确认项整理。
+- `architecture` — 前端架构助手,负责模块扫描、技术边界、目录影响和契约约束。
+- `lead_orchestrator` — 多角色协作调度官,负责方案收敛、上下文分发、Gate 控制和主编排推进。
+- `ux` — 交互设计助手,可选支持身份,负责页面流程、状态矩阵和关键交互说明。
+- `frontend` — 前端开发助手,负责页面、组件、路由、API、状态管理和国际化落地。
+- `qa` — 测试验证助手,负责验证执行、回归检查和质量结论。
+- `review` — 交付审查助手,负责交付前只读审查、风险识别和发布建议。
+- `integration` / `backend` / `devops` — 可选支持身份,分别用于联调契约、后端接口口径和工程发布支持。
+- `system` — 系统播报身份,用于运行时事件、默认通知和无人值守消息。
+
+### 1. 在任务里指定负责人
+
+任务定义使用 `ownerRole` 指定由哪个身份执行。`task.type` 必须在该身份的 `allowedTaskTypes` 内,否则运行时会结构化阻断,不会误判为成功。
+
+```yaml
+id: FE-001
+title: 实现登录页
+type: implementation
+ownerRole: frontend
+gate: G4
+dependsOn:
+  - SOL-001
+status: todo
+```
+
+常用对应关系:`requirement → product`,`scan → architecture`,`solution → lead_orchestrator` 或 `ux`,`implementation → frontend`,`validation → qa`,`review → review`。
+
+### 2. 以身份发群消息
+
+用 `ai:post` 记录交接、完成、打回或备注。`--from` 是发言身份,`--to` 是接收身份或 `all`;这只写入沟通事件和 IM 播报,不直接推进任务状态。
+
+```bash
+pnpm ai:post -- --run RUN-SAMPLE-001 --from frontend --to qa --kind done --task FE-001 --text "登录页已完成,请开始验证"
+pnpm ai:post -- --run RUN-SAMPLE-001 --from qa --to frontend --kind reject --task QA-001 --text "移动端登录失败,请返工"
+```
+
+### 3. 以身份执行人工操作
+
+`--by` 表示这次人工操作由哪个身份或操作者发起。省略时会使用当前 RUN 的主编排者,再退回到 `manual`。
+
+```bash
+pnpm ai:approve -- --run RUN-SAMPLE-001 --task SOL-001 --by lead_orchestrator --reason "方案和范围已确认"
+pnpm ai:reject -- --run RUN-SAMPLE-001 --task QA-001 --by qa --reason "验收失败,需要返工"
+pnpm ai:artifact -- --run RUN-SAMPLE-001 --key current_frontend_handoff --path ai/context/runs/RUN-SAMPLE-001/frontend-handoff.md --by frontend --note "前端交接 QA"
+```
+
+### 4. 移交主编排身份
+
+RUN 级写权限由主编排者持有。需要把当前 RUN 的主编排权交给其他操作者时使用 `ai:handoff`;只有当前主编排者可以正常移交。人工确认后的强制接管可使用 `--takeover true`。
+
+```bash
+pnpm ai:handoff -- --run RUN-SAMPLE-001 --by lead_orchestrator --to release-owner --reason "进入发布前人工确认"
+pnpm ai:handoff -- --run RUN-SAMPLE-001 --by release-owner --takeover true --reason "人工确认接管"
+```
+
+### 5. 为不同身份配置机器人
+
+IM 默认使用 `AI_ORCH_IM_WEBHOOK`;如需让不同身份显示为不同机器人,在 `.env.local` 中配置每角色 webhook。后缀是身份 id 的大写形式,例如:
+
+```bash
+AI_ORCH_IM_WEBHOOK_PRODUCT=
+AI_ORCH_IM_WEBHOOK_LEAD_ORCHESTRATOR=
+AI_ORCH_IM_WEBHOOK_ARCHITECTURE=
+AI_ORCH_IM_WEBHOOK_UX=
+AI_ORCH_IM_WEBHOOK_FRONTEND=
+AI_ORCH_IM_WEBHOOK_QA=
+AI_ORCH_IM_WEBHOOK_REVIEW=
+AI_ORCH_IM_WEBHOOK_SYSTEM=
+```
+
+支持身份、任务类型和读取策略的完整定义见 `ai/runtime/definitions/roles.yaml`;流水线阶段和默认负责人见 `ai/runtime/definitions/pipelines.yaml`。
+
 
 ## 执行模型(适配器路由)
 
